@@ -108,6 +108,8 @@ class RoleList:
                       "SmallStraight": self.small_straight, "LargeStraight": self.large_straight,
                       "Yahtzee": self.yahtzee, "Chance": self.chance}
 
+        self.role_names = list(self.roles.keys())
+
     def fullHouseCheckFunc(self, dices):
         if not self.NoneCheck(dices): return False
         freqs = self.CountList(dices)

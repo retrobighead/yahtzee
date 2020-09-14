@@ -1,12 +1,18 @@
-from player import Player
-from dices import DiceState
+from yahtzee_env.envs.player import Player
+from yahtzee_env.envs.dices import DiceState
+from yahtzee_env.envs.roles import RoleList
 import gym
 import gym.spaces
+import numpy as np
 
 class YahtzeeEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi']}
 
     def __init__(self, player_num=2, turn_num=12, round_num=3):
+        super().__init__()
+        self.action_space = gym.spaces.MultiDiscrete([2,2,2,2,2,12])
+        self.observation_space = gym.spaces.MultiDiscrete([6,6,6,6,6])
+
         self.dice_num = 5
         self.player_num = player_num
         self.max_turn_num = turn_num
@@ -16,13 +22,30 @@ class YahtzeeEnv(gym.Env):
         self.current_turn = 0
         self.players = [Player("Player" + str(p+1)) for p in range(self.player_num)]
         self.roll_dices()
+        self.role_list = RoleList().role_names
+
+    def get_observation(self):
+        return np.array(self.players[self.current_player].dices.values, dtype=np.int32)
+
+    def get_reward(self):
+        if (self.current_round != self.max_round_num-1): return 0
+        elif self.get_done(): return self.players[self.current_player].score
+
+        updated_score = self.players[self.current_player].updated_score
+        if updated_score <= 0: return -10
+        return updated_score
+
+    def get_done(self):
+        return (self.current_round == self.max_round_num - 1 and self.current_player == self.player_num - 1 and self.current_turn == self.max_turn_num - 1)
 
     def reset(self):
         self.current_player = 0
         self.current_round = 0
         self.current_turn = 0
-        self.players = [Player("Player" + str( p +1)) for p in range(self.player_num)]
+        self.players = [Player("Player" + str(p+1)) for p in range(self.player_num)]
         self.roll_dices()
+
+        return self.get_observation()
 
     def roll_dices(self):
         for player in self.players:
@@ -35,16 +58,15 @@ class YahtzeeEnv(gym.Env):
             if self.current_player == 0:
                 self.current_turn = (self.current_turn +1) % self.max_turn_num
 
-    def is_done(self):
-        return \
-                    (self.current_round == self.max_round_num - 1 and self.current_player == self.player_num - 1 and self.current_turn == self.max_turn_num - 1)
+        if self.current_round == 0 and self.current_player == 0 and self.current_turn == 0:
+            self.reset()
 
     def is_role_selected_round(self):
         return self.current_round == self.max_round_num - 1
 
     def step(self, operation):
         stay_list = operation[:self.dice_num]
-        selected_role = operation[self.dice_num]
+        selected_role = self.role_list[operation[self.dice_num]]
         player = self.players[self.current_player]
 
         valid_input = True
@@ -57,17 +79,20 @@ class YahtzeeEnv(gym.Env):
             else:
                 self.roll_dices()
 
+            observation = self.get_observation()
+            reward = self.get_reward()
+            done = self.get_done()
+            info = {}
+
             self.increment()
 
-        observation = 0
-        reward = 0
-        done = self.is_done()
-        info = None
-        return observation, reward, done, info
+            return observation, reward, done, info
+        else:
+            return None, None, None, {}
 
     def render(self):
         print("================== Score Board ====================")
-        roles = list(self.players[0].role_list.roles.keys())
+        roles = list(self.role_list.roles.keys())
         for role in roles:
             output = [role] + [str(player.selected_roles[role]) for player in self.players]
             print(self.make_output_line(output))

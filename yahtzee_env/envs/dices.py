@@ -30,7 +30,6 @@ class FiveDices:
 
     def reset(self):
         self.dices = [Dice() for _ in range(self.dice_num)]
-        # self.values = [None for _ in range(self.dice_num)]
         self.values = [dice.roll() for dice in self.dices]
 
     def roll(self):

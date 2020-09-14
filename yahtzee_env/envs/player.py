@@ -1,5 +1,5 @@
-from dices import FiveDices
-from roles import RoleList, RoleType
+from yahtzee_env.envs.dices import FiveDices
+from yahtzee_env.envs.roles import RoleList, RoleType
 
 class Player:
     def __init__(self, name):
@@ -12,6 +12,7 @@ class Player:
         self.upper_role_bonus_threshold = 63
         self.can_get_score_bonus = False
         self.bonus_score = 35
+        self.updated_score = 0
 
     def select_stay(self, stay_list):
         self.dices.select_stay([bool(n) for n in stay_list])
@@ -29,10 +30,12 @@ class Player:
         self.update_score()
 
     def update_score(self):
+        prior_score = self.score
         self.score = sum(list(self.selected_roles.values()))
         self.update_upper_role_score()
         if self.can_get_score_bonus:
             self.score += self.bonus_score
+        self.updated_score = self.score - prior_score
 
     def update_upper_role_score(self):
         self.upper_role_score = 0
