@@ -1,12 +1,17 @@
 from stable_baselines.common.policies import MlpPolicy
-from stable_baselines.common import make_vec_env
 from stable_baselines import PPO2
 
+import os
 import gym
 import yahtzee_env
 
-# main
+# ディレクトリ準備
+log_dir = "./logs"
+model_dir = "./models"
+os.makedirs(log_dir, exist_ok=True)
+os.makedirs(model_dir, exist_ok=True)
 
+# 環境準備と学習
 env = gym.make("yahtzeeenv-v0")
 
 model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log="./logs")
